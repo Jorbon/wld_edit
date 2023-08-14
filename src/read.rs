@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, rc::Rc};
 use hashbrown::hash_set::HashSet;
 
-use crate::{wld::Wld, structs::{Block, Tile, Slope, Wall, Liquid, LiquidType, Chest, Item, Sign, NPC, TileEntity, TileEntityInfo, NPCRoom}};
+use crate::{wld::Wld, structs::{Block, Tile, Slope, Wall, Liquid, LiquidType, Chest, Item, Sign, NPC, TileEntity, TileEntityInfo, NPCRoom, CreativePower}};
 
 struct Reader {
 	deque: VecDeque<u8>,
@@ -383,10 +383,7 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 			items:
 				(0..40).map(|_| {
 					let count = r.u16();
-					match count {
-						0 => None,
-						_ => Some(Item { id: r.u32(), prefix: r.u8(), count })
-					}
+					(count > 0).then_some(Item { id: r.u32(), prefix: r.u8(), count })
 				}).collect()
 		}
 	}).collect();
@@ -523,19 +520,18 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 	r.check_position(9).unwrap();
 	
 	
-	if r.u8() != 1 || r.u16() != 0 { panic!() }
-	let freeze_time = r.bool();
-	if r.u8() != 1 || r.u16() != 8 { panic!() }
-	let time_rate = r.f32();
-	if r.u8() != 1 || r.u16() != 9 { panic!() }
-	let freeze_weather = r.bool();
-	if r.u8() != 1 || r.u16() != 10 { panic!() }
-	let freeze_wind = r.bool();
-	if r.u8() != 1 || r.u16() != 12 { panic!() }
-	let difficulty_slider = r.f32();
-	if r.u8() != 1 || r.u16() != 13 { panic!() }
-	let freeze_spread = r.bool();
-	if r.u8() != 0 { panic!() }
+	let mut creative_powers = vec![];
+	while r.bool() {
+		creative_powers.push(match r.u16() {
+			0 => CreativePower::FreezeTime(r.bool()),
+			8 => CreativePower::TimeRate(r.f32()),
+			9 => CreativePower::FreezeWeather(r.bool()),
+			10 => CreativePower::FreezeWind(r.bool()),
+			12 => CreativePower::DifficultySlider(r.f32()),
+			13 => CreativePower::FreezeSpread(r.bool()),
+			_ => panic!()
+		});
+	}
 	
 	r.check_position(10).unwrap();
 	
@@ -546,8 +542,6 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 	Wld {
 		version, magic_number, file_type, revision, is_favorite, importance, name, seed, world_gen_version, guid, id, left, right, top, bottom, height, width, gamemode, drunk_world, good_world, tenth_anniversary_world, dont_starve_world, notthebees_world, remix_world, notraps_world, zenith_world, creation_time, moon_type, tree_type_xcoords, tree_types, cave_bg_xcoords, cave_bgs, ice_bg, jungle_bg, hell_bg, spawn_x, spawn_y, world_surface_y, rock_layer_y, game_time, is_day, moon_phase, blood_moon, eclipse, dungeon_x, dungeon_y, crimson_world, killed_eye_of_cthulu, killed_eater_of_worlds, killed_skeletron, killed_queen_bee, killed_the_destroyer, killed_the_twins, killed_skeletron_prime, killed_any_hardmode_boss, killed_plantera, killed_golem, killed_slime_king, saved_goblin_tinkerer, saved_wizard, saved_mechanic, defeated_goblin_invasion, killed_clown, defeated_frost_legion, defeated_pirates, broken_shadow_orb, meteor_spawned, shadow_orbs_broken_mod3, altars_smashed, hard_mode, after_party_of_doom, goblin_invasion_delay, goblin_invasion_size, goblin_invasion_type, goblin_invasion_x, slime_rain_time, sundial_cooldown, is_raining, rain_time, max_rain, tier_1_ore_id, tier_2_ore_id, tier_3_ore_id, tree_style, corruption_style, jungle_style, snow_style, hallow_style, crimson_style, desert_style, ocean_style, cloud_bg, num_clouds, wind_speed, angler_finishers, saved_angler, angler_quest, saved_stylist, saved_tax_collector, saved_golfer, invasion_size_start, temp_cultist_delay, kill_counts, fast_forward_time, downed_fishron, downed_martians, downed_ancient_cultist, downed_moonlord, downed_halloween_king, downed_halloween_tree, downed_christmas_ice_queen, downed_christmas_santank, downed_christmas_tree, downed_tower_solar, downed_tower_vortex, downed_tower_nebula, downed_tower_stardust, tower_active_solar, tower_active_vortex, tower_active_nebula, tower_active_stardust, lunar_apocalypse_is_up, party_manual, party_genuine, party_cooldown, party_celebrating_npcs, sandstorm_happening, sandstorm_time_left, sandstorm_severity, sandstorm_intended_severity, saved_bartender, downed_invasion_tier_1, downed_invasion_tier_2, downed_invasion_tier_3, mushroom_bg, underworld_bg, tree2_bg, tree3_bg, tree4_bg, combat_book_was_used, lantern_night_stuff, lantern_night_more_stuff, tree_top_stuff, force_halloween_for_today, force_xmas_for_today, copper_tier, iron_tier, silver_tier, gold_tier, bought_cat, bought_dog, bought_bunny, downed_empress_of_light, downed_queen_slime, downed_deerclops, unlocked_slime_blue_spawn, unlocked_merchant_spawn, unlocked_demolitionist_spawn, unlocked_party_girl_spawn, unlocked_dye_trader_spawn, unlocked_truffle_spawn, unlocked_arms_dealer_spawn, unlocked_nurse_spawn, unlocked_princess_spawn, combat_book_v2_was_used, peddlers_satched_was_used, unlocked_slime_green_spawn, unlocked_slime_old_spawn, unlocked_slime_purple_spawn, unlocked_slime_rainbow_spawn, unlocked_slime_red_spawn, unlocked_slime_yellow_spawn, unlocked_slime_copper_spawn, fast_forward_to_dusk, moondial_cooldown,
 		
-		tile_set, tiles, chests, signs, npcs, tile_entities, weighted_pressure_plates, npc_rooms, bestiary_kills, bestiary_sights, bestiary_chats,
-		
-		freeze_time, time_rate, freeze_weather, freeze_wind, difficulty_slider, freeze_spread
+		tile_set, tiles, chests, signs, npcs, tile_entities, weighted_pressure_plates, npc_rooms, bestiary_kills, bestiary_sights, bestiary_chats, creative_powers
 	}
 }

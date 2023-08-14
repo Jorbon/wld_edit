@@ -124,3 +124,12 @@ pub struct NPCRoom {
 
 
 
+pub enum CreativePower {
+	FreezeTime(bool),
+	TimeRate(f32),
+	FreezeWeather(bool),
+	FreezeWind(bool),
+	DifficultySlider(f32),
+	FreezeSpread(bool)
+}
+

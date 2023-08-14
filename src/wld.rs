@@ -1,7 +1,7 @@
 
 use std::{fs::File, io::{BufReader, Read, Write}, rc::Rc};
 use hashbrown::hash_set::HashSet;
-use crate::structs::{Chest, Sign, Tile, NPC, TileEntity, NPCRoom};
+use crate::structs::{Chest, Sign, Tile, NPC, TileEntity, NPCRoom, CreativePower};
 
 pub struct Wld {
 	pub version: u32,
@@ -195,12 +195,7 @@ pub struct Wld {
 	pub bestiary_sights: Vec<String>,
 	pub bestiary_chats: Vec<String>,
 	
-	pub freeze_time: bool,
-	pub time_rate: f32,
-	pub freeze_weather: bool,
-	pub freeze_wind: bool,
-	pub difficulty_slider: f32,
-	pub freeze_spread: bool,
+	pub creative_powers: Vec<CreativePower>,
 }
 
 impl Wld {
@@ -210,7 +205,7 @@ impl Wld {
 		let tiles = vec![Rc::clone(p)];
 		Wld { version: 279, magic_number: [0; 7], file_type: 2, revision: 1, is_favorite: 0, importance: vec![], name: String::new(), seed: String::new(), world_gen_version: 279, guid: 0, id: 0, left: 0, right: 1600, top: 0, bottom: 1600, height: 100, width: 100, gamemode: 0, drunk_world: false, good_world: false, tenth_anniversary_world: false, dont_starve_world: false, notthebees_world: false, remix_world: false, notraps_world: false, zenith_world: false, creation_time: 0, moon_type: 0, tree_type_xcoords: [0; 3], tree_types: [0; 4], cave_bg_xcoords: [0; 3], cave_bgs: [0; 4], ice_bg: 0, jungle_bg: 0, hell_bg: 0, spawn_x: 0, spawn_y: 0, world_surface_y: 0.0, rock_layer_y: 0.0, game_time: 0.0, is_day: true, moon_phase: 0, blood_moon: false, eclipse: false, dungeon_x: 0, dungeon_y: 0, crimson_world: false, killed_eye_of_cthulu: false, killed_eater_of_worlds: false, killed_skeletron: false, killed_queen_bee: false, killed_the_destroyer: false, killed_the_twins: false, killed_skeletron_prime: false, killed_any_hardmode_boss: false, killed_plantera: false, killed_golem: false, killed_slime_king: false, saved_goblin_tinkerer: false, saved_wizard: false, saved_mechanic: false, defeated_goblin_invasion: false, killed_clown: false, defeated_frost_legion: false, defeated_pirates: false, broken_shadow_orb: false, meteor_spawned: false, shadow_orbs_broken_mod3: 0, altars_smashed: 0, hard_mode: false, after_party_of_doom: false, goblin_invasion_delay: 0, goblin_invasion_size: 0, goblin_invasion_type: 0, goblin_invasion_x: 0.0, slime_rain_time: 0.0, sundial_cooldown: 0, is_raining: false, rain_time: 0, max_rain: 0.0, tier_1_ore_id: 0, tier_2_ore_id: 0, tier_3_ore_id: 0, tree_style: 0, corruption_style: 0, jungle_style: 0, snow_style: 0, hallow_style: 0, crimson_style: 0, desert_style: 0, ocean_style: 0, cloud_bg: 0, num_clouds: 0, wind_speed: 0.0, angler_finishers: vec![], saved_angler: false, angler_quest: 0, saved_stylist: false, saved_tax_collector: false, saved_golfer: false, invasion_size_start: 0, temp_cultist_delay: 0, kill_counts: vec![], fast_forward_time: false, downed_fishron: false, downed_martians: false, downed_ancient_cultist: false, downed_moonlord: false, downed_halloween_king: false, downed_halloween_tree: false, downed_christmas_ice_queen: false, downed_christmas_santank: false, downed_christmas_tree: false, downed_tower_solar: false, downed_tower_vortex: false, downed_tower_nebula: false, downed_tower_stardust: false, tower_active_solar: false, tower_active_vortex: false, tower_active_nebula: false, tower_active_stardust: false, lunar_apocalypse_is_up: false, party_manual: false, party_genuine: false, party_cooldown: 0, party_celebrating_npcs: vec![], sandstorm_happening: false, sandstorm_time_left: 0, sandstorm_severity: 0.0, sandstorm_intended_severity: 0.0, saved_bartender: false, downed_invasion_tier_1: false, downed_invasion_tier_2: false, downed_invasion_tier_3: false, mushroom_bg: 0, underworld_bg: 0, tree2_bg: 0, tree3_bg: 0, tree4_bg: 0, combat_book_was_used: false, lantern_night_stuff: 0, lantern_night_more_stuff: [false; 3], tree_top_stuff: vec![], force_halloween_for_today: false, force_xmas_for_today: false, copper_tier: 0, iron_tier: 0, silver_tier: 0, gold_tier: 0, bought_cat: false, bought_dog: false, bought_bunny: false, downed_empress_of_light: false, downed_queen_slime: false, downed_deerclops: false, unlocked_slime_blue_spawn: false, unlocked_merchant_spawn: false, unlocked_demolitionist_spawn: false, unlocked_party_girl_spawn: false, unlocked_dye_trader_spawn: false, unlocked_truffle_spawn: false, unlocked_arms_dealer_spawn: false, unlocked_nurse_spawn: false, unlocked_princess_spawn: false, combat_book_v2_was_used: false, peddlers_satched_was_used: false, unlocked_slime_green_spawn: false, unlocked_slime_old_spawn: false, unlocked_slime_purple_spawn: false, unlocked_slime_rainbow_spawn: false, unlocked_slime_red_spawn: false, unlocked_slime_yellow_spawn: false, unlocked_slime_copper_spawn: false, fast_forward_to_dusk: false, moondial_cooldown: 0,
 		
-		tile_set, tiles, chests: vec![], signs: vec![], npcs: vec![], tile_entities: vec![], weighted_pressure_plates: vec![], npc_rooms: vec![], bestiary_kills: vec![], bestiary_sights: vec![], bestiary_chats: vec![], freeze_time: false, time_rate: 1.0, freeze_weather: false, freeze_wind: false, difficulty_slider: 1.0, freeze_spread: false }
+		tile_set, tiles, chests: vec![], signs: vec![], npcs: vec![], tile_entities: vec![], weighted_pressure_plates: vec![], npc_rooms: vec![], bestiary_kills: vec![], bestiary_sights: vec![], bestiary_chats: vec![], creative_powers: vec![] }
 	}
 	
 	pub fn read(path: &str) -> std::io::Result<Wld> {

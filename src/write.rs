@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{wld::Wld, structs::{Block, Wall, Liquid, Slope, LiquidType}};
+use crate::{wld::Wld, structs::{Block, Wall, Liquid, Slope, LiquidType, TileEntityInfo, CreativePower}};
 
 struct Writer {
 	pub data: Vec<u8>
@@ -40,12 +40,12 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	let mut w = Writer { data: vec![] };
 	
 	w.u32(wld.version);
-	wld.magic_number.map(|n| w.u8(n));
+	for n in wld.magic_number { w.u8(n) }
 	w.u8(wld.file_type);
 	w.u32(wld.revision);
 	w.u64(wld.is_favorite);
 	w.u16(11);
-	[0; 11].map(|_| w.u32(0));
+	for _ in 0..11 { w.u32(0) }
 	w.u16(wld.importance.len() as u16);
 	
 	let mut i = 0;
@@ -66,6 +66,7 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	}
 	
 	w.mark(0);
+	
 	
 	println!("{}: Writing header", wld.name);
 	
@@ -91,10 +92,10 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	w.bool(wld.zenith_world);
 	w.u64(wld.creation_time);
 	w.u8(wld.moon_type);
-	wld.tree_type_xcoords.map(|n| w.u32(n));
-	wld.tree_types.map(|n| w.u32(n));
-	wld.cave_bg_xcoords.map(|n| w.u32(n));
-	wld.cave_bgs.map(|n| w.u32(n));
+	for n in wld.tree_type_xcoords { w.u32(n) }
+	for n in wld.tree_types { w.u32(n) }
+	for n in wld.cave_bg_xcoords { w.u32(n) }
+	for n in wld.cave_bgs { w.u32(n) }
 	w.u32(wld.jungle_bg);
 	w.u32(wld.ice_bg);
 	w.u32(wld.hell_bg);
@@ -158,7 +159,7 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	w.u16(wld.num_clouds);
 	w.f32(wld.wind_speed);
 	w.u32(wld.angler_finishers.len() as u32);
-	wld.angler_finishers.iter().map(|s| w.string(s)).count();
+	for s in &wld.angler_finishers { w.string(&s) }
 	w.bool(wld.saved_angler);
 	w.u32(wld.angler_quest);
 	w.bool(wld.saved_stylist);
@@ -167,7 +168,7 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	w.u32(wld.invasion_size_start);
 	w.u32(wld.temp_cultist_delay);
 	w.u16(wld.kill_counts.len() as u16);
-	wld.kill_counts.iter().map(|n| w.u32(*n)).count();
+	for n in &wld.kill_counts { w.u32(*n) }
 	w.bool(wld.fast_forward_time);
 	w.bool(wld.downed_fishron);
 	w.bool(wld.downed_martians);
@@ -191,7 +192,7 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	w.bool(wld.party_genuine);
 	w.u32(wld.party_cooldown);
 	w.u32(wld.party_celebrating_npcs.len() as u32);
-	wld.party_celebrating_npcs.iter().map(|n| w.u32(*n)).count();
+	for n in &wld.party_celebrating_npcs { w.u32(*n) }
 	w.bool(wld.sandstorm_happening);
 	w.u32(wld.sandstorm_time_left);
 	w.f32(wld.sandstorm_severity);
@@ -207,9 +208,9 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	w.u8(wld.tree4_bg);
 	w.bool(wld.combat_book_was_used);
 	w.u32(wld.lantern_night_stuff);
-	wld.lantern_night_more_stuff.map(|b| w.bool(b));
+	for b in wld.lantern_night_more_stuff { w.bool(b) }
 	w.u32(wld.tree_top_stuff.len() as u32);
-	wld.tree_top_stuff.iter().map(|n| w.u32(*n)).count();
+	for n in &wld.tree_top_stuff { w.u32(*n) }
 	w.bool(wld.force_halloween_for_today);
 	w.bool(wld.force_xmas_for_today);
 	w.u32(wld.copper_tier);
@@ -242,6 +243,8 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	w.bool(wld.unlocked_slime_copper_spawn);
 	w.bool(wld.fast_forward_to_dusk);
 	w.u8(wld.moondial_cooldown);
+	
+	w.mark(1);
 	
 	
 	println!("{}: Writing tiles", wld.name);
@@ -344,22 +347,189 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 		w.data.append(&mut temp);
 	}
 	
+	w.mark(2);
+	
 	
 	println!("{}: Writing chests", wld.name);
 	
+	w.u16(wld.chests.len() as u16);
+	w.u16(40);
+	for chest in &wld.chests {
+		w.u32(chest.x);
+		w.u32(chest.y);
+		w.string(&chest.name);
+		for item in &chest.items {
+			match item {
+				Some(n) => { w.u16(n.count); w.u8(n.prefix); w.u32(n.id) },
+				None => w.u16(0)
+			}
+		}
+	}
+	
+	w.mark(3);
 	
 	
 	println!("{}: Writing signs", wld.name);
 	
+	w.u16(wld.signs.len() as u16);
+	for sign in &wld.signs {
+		w.string(&sign.text);
+		w.u32(sign.x);
+		w.u32(sign.y);
+	}
+	
+	w.mark(4);
 	
 	
 	println!("{}: Writing npcs", wld.name);
 	
+	w.u32(wld.npcs.len() as u32);
+	for npc in &wld.npcs {
+		if npc.shimmered {
+			w.u32(npc.id);
+		}
+	}
+	for npc in &wld.npcs {
+		if npc.is_pillar { continue }
+		w.bool(true);
+		w.u32(npc.id);
+		w.string(&npc.name);
+		w.f32(npc.x);
+		w.f32(npc.y);
+		w.bool(npc.homeless);
+		w.u32(npc.home_x);
+		w.u32(npc.home_y);
+		match npc.variation_index {
+			0 => w.bool(false),
+			_ => { w.bool(true); w.u32(npc.variation_index) }
+		};
+	}
+	w.bool(false);
+	for npc in &wld.npcs {
+		if !npc.is_pillar { continue }
+		w.bool(true);
+		w.u32(npc.id);
+		w.f32(npc.x);
+		w.f32(npc.y);
+	}
+	w.bool(false);
+	
+	w.mark(5);
 	
 	
 	println!("{}: Writing misc", wld.name);
 	
+	w.u32(wld.tile_entities.len() as u32);
+	for t in &wld.tile_entities {
+		w.u8(match t.info {
+			TileEntityInfo::TargetDummy(..) => 0,
+			TileEntityInfo::ItemFrame(..) => 1,
+			TileEntityInfo::LogicSensor(..) => 2,
+			TileEntityInfo::Mannequin(..) => 3,
+			TileEntityInfo::WeaponRack(..) => 4,
+			TileEntityInfo::HatRack(..) => 5,
+			TileEntityInfo::FoodPlatter(..) => 6,
+			TileEntityInfo::Pylon => 7
+		});
+		w.u32(t.id);
+		w.u16(t.x);
+		w.u16(t.y);
+		match t.info {
+			TileEntityInfo::Pylon => {}
+			TileEntityInfo::TargetDummy(n) => w.u16(n),
+			TileEntityInfo::LogicSensor(n, b) => { w.u8(n); w.bool(b) }
+			TileEntityInfo::ItemFrame(None) => { w.u32(0); w.u8(0) }
+			TileEntityInfo::ItemFrame(Some(item)) => { w.u16(item.id as u16); w.u8(item.prefix); w.u16(item.count) }
+			TileEntityInfo::WeaponRack(None) => { w.u32(0); w.u8(0) }
+			TileEntityInfo::WeaponRack(Some(item)) => { w.u16(item.id as u16); w.u8(item.prefix); w.u16(item.count) }
+			TileEntityInfo::FoodPlatter(None) => { w.u32(0); w.u8(0) }
+			TileEntityInfo::FoodPlatter(Some(item)) => { w.u16(item.id as u16); w.u8(item.prefix); w.u16(item.count) }
+			TileEntityInfo::Mannequin(items) => {
+				w.u16((0..16).map(|i| match items[i] { Some(_) => 1 << i, None => 0 }).sum());
+				for item in items {
+					if let Some(item) = item {
+						w.u16(item.id as u16);
+						w.u8(item.prefix);
+						w.u16(item.count);
+					}
+				}
+			}
+			TileEntityInfo::HatRack(items) => {
+				w.u8((0..4).map(|i| match items[i] { Some(_) => 1 << i, None => 0 }).sum());
+				for item in items {
+					if let Some(item) = item {
+						w.u16(item.id as u16);
+						w.u8(item.prefix);
+						w.u16(item.count);
+					}
+				}
+			}
+		};
+	}
 	
+	w.mark(6);
+	
+	w.u32(wld.weighted_pressure_plates.len() as u32);
+	for p in &wld.weighted_pressure_plates {
+		w.u32(p.0);
+		w.u32(p.1);
+	}
+	
+	w.mark(7);
+	
+	w.u32(wld.npc_rooms.len() as u32);
+	for r in &wld.npc_rooms {
+		w.u32(r.id);
+		w.u32(r.x);
+		w.u32(r.y);
+	}
+	
+	w.mark(8);
+	
+	w.u32(wld.bestiary_kills.len() as u32);
+	for k in &wld.bestiary_kills {
+		w.string(&k.0);
+		w.u32(k.1);
+	}
+	w.u32(wld.bestiary_sights.len() as u32);
+	for s in &wld.bestiary_sights {
+		w.string(&s);
+	}
+	w.u32(wld.bestiary_chats.len() as u32);
+	for s in &wld.bestiary_chats {
+		w.string(&s);
+	}
+	
+	w.mark(9);
+	
+	for p in &wld.creative_powers {
+		w.bool(true);
+		w.u16(match p {
+			CreativePower::FreezeTime(_) => 0,
+			CreativePower::TimeRate(_) => 8,
+			CreativePower::FreezeWeather(_) => 9,
+			CreativePower::FreezeWind(_) => 10,
+			CreativePower::DifficultySlider(_) => 12,
+			CreativePower::FreezeSpread(_) => 13
+		});
+		match p {
+			CreativePower::FreezeTime(b) => w.bool(*b),
+			CreativePower::FreezeWeather(b) => w.bool(*b),
+			CreativePower::FreezeWind(b) => w.bool(*b),
+			CreativePower::FreezeSpread(b) => w.bool(*b),
+			CreativePower::TimeRate(n) => w.f32(*n),
+			CreativePower::DifficultySlider(n) => w.f32(*n)
+		}
+	}
+	w.bool(false);
+	
+	w.mark(10);
+	
+	w.bool(true);
+	w.string(&wld.name);
+	w.u32(wld.id);
+	
+	println!("{}: Done", wld.name);
 	
 	w.data
 }

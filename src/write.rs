@@ -1,4 +1,6 @@
-use crate::wld::Wld;
+use std::rc::Rc;
+
+use crate::{wld::Wld, structs::{Block, Wall, Liquid, Slope, LiquidType}};
 
 struct Writer {
 	pub data: Vec<u8>
@@ -244,7 +246,103 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	
 	println!("{}: Writing tiles", wld.name);
 	
-	
+	let mut i = 0;
+	while (i as u32) < wld.width * wld.height {
+		let tile = Rc::clone(&wld.tiles[i]);
+		let mut k = 0;
+		loop {
+			i += 1;
+			if i as u32 % wld.height == 0 { break }
+			if wld.tiles[i] != tile { break }
+			k += 1;
+		}
+		
+		let mut a = 0;
+		let mut b = 0;
+		let mut c = 0;
+		
+		
+		
+		let mut temp = Vec::new();
+		
+		if let Some(Block { id, color, uv, inactive, slope }) = tile.block {
+			a += 2;
+			temp.push(id as u8);
+			if id >= 256 {
+				a += 32;
+				temp.push((id >> 8) as u8);
+			}
+			if wld.importance[id as usize] {
+				let uv = uv.unwrap_or((0, 0));
+				temp.append(&mut vec![uv.0 as u8, (uv.0 >> 8) as u8, uv.1 as u8, (uv.1 >> 8) as u8]);
+			}
+			if let Some(n) = color {
+				c += 8;
+				temp.push(n);
+			}
+			if inactive {
+				c += 4;
+			}
+			b += match slope {
+				Slope::Full => 0,
+				Slope::Half => 1,
+				Slope::LowerLeft => 2,
+				Slope::LowerRight => 3,
+				Slope::UpperLeft => 4,
+				Slope::UpperRight => 5
+			} << 4;
+		}
+		
+		if let Some(Wall { id, color }) = tile.wall {
+			a += 4;
+			temp.push(id as u8);
+			if id >= 256 {
+				c += 64;
+				temp.push((id >> 8) as u8);
+			}
+			if let Some(n) = color {
+				c += 16;
+				temp.push(n);
+			}
+		}
+		
+		if let Some(Liquid { kind, amount }) = tile.liquid {
+			a += match kind {
+				LiquidType::Water => 1,
+				LiquidType::Lava => 2,
+				LiquidType::Honey => 3,
+				LiquidType::Shimmer => { c += 128; 1 }
+			} << 3;
+			temp.push(amount);
+		}
+		
+		if tile.red_wire { b += 2 }
+		if tile.green_wire { b += 4 }
+		if tile.blue_wire { b += 8 }
+		if tile.yellow_wire { c += 32 }
+		if tile.actuator { c += 2 }
+		
+		if k > 0 {
+			a += 64;
+			temp.push(k as u8);
+			if k >= 256 {
+				a += 64;
+				temp.push((k >> 8) as u8);
+			}
+		}
+		
+		if c > 0 {
+			temp.insert(0, c);
+			b += 1;
+		}
+		if b > 0 {
+			temp.insert(0, b);
+			a += 1;
+		}
+		
+		w.u8(a);
+		w.data.append(&mut temp);
+	}
 	
 	
 	println!("{}: Writing chests", wld.name);

@@ -293,36 +293,27 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 			if c & 1 == 1 || b & 128 == 128 { panic!() }
 			
 			let tile = Rc::new(Tile {
-				block: match a & 2 == 2 {
-					true => Some({
-						let id = match a & 32 == 32 {
-							true => r.u16(),
-							false => r.u8() as u16
-						};
-						Block {
-							id,
-							uv: match importance[id as usize] {
-								true => Some((r.u16(), r.u16())),
-								false => None
-							},
-							color: match c & 8 == 8 {
-								true => Some(r.u8()),
-								false => None
-							},
-							inactive: c & 4 == 4,
-							slope: match (b >> 4) & 7 {
-								0 => Slope::Full,
-								1 => Slope::Half,
-								2 => Slope::LowerLeft,
-								3 => Slope::LowerRight,
-								4 => Slope::UpperLeft,
-								5 => Slope::UpperRight,
-								_ => Slope::Full
-							}
+				block: (a & 2 == 2).then_some({
+					let id = match a & 32 == 32 {
+						true => r.u16(),
+						false => r.u8() as u16
+					};
+					Block {
+						id,
+						uv: importance[id as usize].then_some((r.u16(), r.u16())),
+						color: (c & 8 == 8).then_some(r.u8()),
+						inactive: c & 4 == 4,
+						slope: match (b >> 4) & 7 {
+							0 => Slope::Full,
+							1 => Slope::Half,
+							2 => Slope::LowerLeft,
+							3 => Slope::LowerRight,
+							4 => Slope::UpperLeft,
+							5 => Slope::UpperRight,
+							_ => Slope::Full
 						}
-					}),
-					false => None
-				},
+					}
+				}),
 				wall: 
 					match a & 4 == 4 {
 						true => Some(Wall {
@@ -330,27 +321,21 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 								true => r.u16(),
 								false => r.u8() as u16
 							},
-							color: match c & 16 == 16 {
-								true => Some(r.u8()),
-								false => None
-							}
+							color: (c & 16 == 16).then_some(r.u8())
 						}),
 						false => None
 					},
-				liquid: match (a >> 3) & 3 > 0 {
-					true => Some(Liquid {
-						kind: match c & 128 == 128 {
-							true => LiquidType::Shimmer,
-							false => match (a >> 3) & 3 {
-								2 => LiquidType::Lava,
-								3 => LiquidType::Honey,
-								_ => LiquidType::Water
-							}
-						},
-						amount: r.u8()
-					}),
-					false => None
-				},
+				liquid: ((a >> 3) & 3 > 0).then_some(Liquid {
+					kind: match c & 128 == 128 {
+						true => LiquidType::Shimmer,
+						false => match (a >> 3) & 3 {
+							2 => LiquidType::Lava,
+							3 => LiquidType::Honey,
+							_ => LiquidType::Water
+						}
+					},
+					amount: r.u8()
+				}),
 				red_wire: b & 2 == 2,
 				green_wire: b & 4 == 4,
 				blue_wire: b & 8 == 8,
@@ -473,20 +458,16 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 					let id = r.u16() as u32;
 					let prefix = r.u8();
 					let count = r.u16();
-					match count > 0 {
-						true => Some(Item { id, prefix, count }),
-						false => None
-					}
+					(count > 0).then_some(Item { id, prefix, count })
 				}),
 				2 => TileEntityInfo::LogicSensor(r.u8(), r.bool()),
 				3 => TileEntityInfo::Mannequin({
 					let mut buffer = [None; 16];
 					let slots = r.u16();
 					let mut i = 0;
-					for item in (0..16).map(|i| match (slots >> i) & 1 == 1 {
-						true => Some(Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }),
-						false => None
-					}) {
+					for item in (0..16).map(|i| ((slots >> i) & 1 == 1).then_some(
+						Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }
+					)) {
 						buffer[i] = item;
 						i += 1;
 					};
@@ -496,19 +477,15 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 					let id = r.u16() as u32;
 					let prefix = r.u8();
 					let count = r.u16();
-					match count > 0 {
-						true => Some(Item { id, prefix, count }),
-						false => None
-					}
+					(count > 0).then_some(Item { id, prefix, count })
 				}),
 				5 => TileEntityInfo::HatRack({
 					let mut buffer = [None; 4];
 					let slots = r.u8();
 					let mut i = 0;
-					for item in (0..4).map(|i| match (slots >> i) & 1 == 1 {
-						true => Some(Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }),
-						false => None
-					}) {
+					for item in (0..4).map(|i| ((slots >> i) & 1 == 1).then_some(
+						Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }
+					)) {
 						buffer[i] = item;
 						i += 1;
 					};
@@ -518,10 +495,7 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 					let id = r.u16() as u32;
 					let prefix = r.u8();
 					let count = r.u16();
-					match count > 0 {
-						true => Some(Item { id, prefix, count }),
-						false => None
-					}
+					(count > 0).then_some(Item { id, prefix, count })
 				}),
 				7 => TileEntityInfo::Pylon,
 				_ => panic!()

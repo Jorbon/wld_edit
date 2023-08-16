@@ -293,15 +293,15 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 			if c & 1 == 1 || b & 128 == 128 { panic!() }
 			
 			let tile = Rc::new(Tile {
-				block: (a & 2 == 2).then_some({
+				block: (a & 2 == 2).then(|| {
 					let id = match a & 32 == 32 {
 						true => r.u16(),
 						false => r.u8() as u16
 					};
 					Block {
 						id,
-						uv: importance[id as usize].then_some((r.u16(), r.u16())),
-						color: (c & 8 == 8).then_some(r.u8()),
+						uv: importance[id as usize].then(|| (r.u16(), r.u16())),
+						color: (c & 8 == 8).then(|| r.u8()),
 						inactive: c & 4 == 4,
 						slope: match (b >> 4) & 7 {
 							0 => Slope::Full,
@@ -321,11 +321,11 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 								true => r.u16(),
 								false => r.u8() as u16
 							},
-							color: (c & 16 == 16).then_some(r.u8())
+							color: (c & 16 == 16).then(|| r.u8())
 						}),
 						false => None
 					},
-				liquid: ((a >> 3) & 3 > 0).then_some(Liquid {
+				liquid: ((a >> 3) & 3 > 0).then(|| Liquid {
 					kind: match c & 128 == 128 {
 						true => LiquidType::Shimmer,
 						false => match (a >> 3) & 3 {
@@ -383,7 +383,7 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 			items:
 				(0..40).map(|_| {
 					let count = r.u16();
-					(count > 0).then_some(Item { id: r.u32(), prefix: r.u8(), count })
+					(count > 0).then(|| Item { id: r.u32(), prefix: r.u8(), count })
 				}).collect()
 		}
 	}).collect();
@@ -455,15 +455,15 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 					let id = r.u16() as u32;
 					let prefix = r.u8();
 					let count = r.u16();
-					(count > 0).then_some(Item { id, prefix, count })
+					(count > 0).then(|| Item { id, prefix, count })
 				}),
 				2 => TileEntityInfo::LogicSensor(r.u8(), r.bool()),
 				3 => TileEntityInfo::Mannequin({
 					let mut buffer = [None; 16];
 					let slots = r.u16();
 					let mut i = 0;
-					for item in (0..16).map(|i| ((slots >> i) & 1 == 1).then_some(
-						Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }
+					for item in (0..16).map(|i| ((slots >> i) & 1 == 1).then(
+						|| Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }
 					)) {
 						buffer[i] = item;
 						i += 1;
@@ -474,14 +474,14 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 					let id = r.u16() as u32;
 					let prefix = r.u8();
 					let count = r.u16();
-					(count > 0).then_some(Item { id, prefix, count })
+					(count > 0).then(|| Item { id, prefix, count })
 				}),
 				5 => TileEntityInfo::HatRack({
 					let mut buffer = [None; 4];
 					let slots = r.u8();
 					let mut i = 0;
-					for item in (0..4).map(|i| ((slots >> i) & 1 == 1).then_some(
-						Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }
+					for item in (0..4).map(|i| ((slots >> i) & 1 == 1).then(
+						|| Item { id: r.u16() as u32, prefix: r.u8(), count: r.u16() }
 					)) {
 						buffer[i] = item;
 						i += 1;
@@ -492,7 +492,7 @@ pub fn read(buffer: Vec<u8>) -> Wld {
 					let id = r.u16() as u32;
 					let prefix = r.u8();
 					let count = r.u16();
-					(count > 0).then_some(Item { id, prefix, count })
+					(count > 0).then(|| Item { id, prefix, count })
 				}),
 				7 => TileEntityInfo::Pylon,
 				_ => panic!()

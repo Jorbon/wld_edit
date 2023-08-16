@@ -1,6 +1,7 @@
 extern crate hashbrown;
+extern crate rand;
+use rand::Rng;
 
-use structs::{Block, Tile, Slope, Liquid};
 use wld::Wld;
 
 mod wld;
@@ -13,14 +14,35 @@ fn main() {
 	
 	let mut w = Wld::read(&(path.clone() + "1.wld")).unwrap();
 	
-	let tile = Tile { block: Some(Block { id: 1, color: None, uv: None, inactive: false, slope: Slope::LowerLeft }), wall: None, liquid: Some(Liquid { kind: structs::LiquidType::Honey, amount: 127 }), red_wire: false, green_wire: true, blue_wire: false, yellow_wire: true, actuator: false };
-	for x in 0..200 {
-		for y in 0..200 {
-			w.set_block(x, y, tile);
+	let mut good_ids = vec![];
+	for i in 0..w.importance.len() {
+		if !w.importance[i] {
+			good_ids.push(i as u16);
 		}
 	}
 	
-	w.name = String::from("1 block");
+	let mut r = rand::thread_rng();
 	
-	w.write(&(path + "1_block.wld")).unwrap();
+	for x in 0..w.width {
+		for y in 0..w.height {
+			let tile = &w.tiles[(x*w.height + y) as usize];
+			let mut new_tile = *tile.clone();
+			if let Some(mut block) = tile.block {
+				block.id = good_ids[r.gen_range(0..good_ids.len())];
+				block.uv = None;
+				new_tile.block = Some(block);
+			}
+			if let Some(mut wall) = tile.wall {
+				wall.id = r.gen_range(0..255);
+				new_tile.wall = Some(wall);
+			}
+			w.set_block(x, y, new_tile);
+		}
+	}
+	
+	w.name = String::from("weird");
+	
+	w.write(&(path.clone() + "weird.wld")).unwrap();
+	
+	//let _w2 = Wld::read(&(path.clone() + "1_block.wld")).unwrap();
 }

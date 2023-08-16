@@ -383,12 +383,17 @@ pub fn write(wld: &Wld) -> Vec<u8> {
 	
 	println!("{}: Writing npcs", wld.name);
 	
-	w.u32(wld.npcs.len() as u32);
+	let mut temp = vec![];
+	let mut n = 0;
 	for npc in &wld.npcs {
 		if npc.shimmered {
-			w.u32(npc.id);
+			temp.push(npc.id);
+			n += 1;
 		}
 	}
+	w.u32(n);
+	temp.iter().map(|n| w.u32(*n)).count();
+	
 	for npc in &wld.npcs {
 		if npc.is_pillar { continue }
 		w.bool(true);

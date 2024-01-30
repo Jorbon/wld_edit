@@ -5,3 +5,4 @@ version = "0.1.0"
 [dependencies]
 hashbrown = "*"
 rand = "0.8"
+glium = "0.32.1"

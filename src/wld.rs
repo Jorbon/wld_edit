@@ -198,6 +198,7 @@ pub struct Wld {
 	pub creative_powers: Vec<CreativePower>,
 }
 
+#[allow(dead_code)]
 impl Wld {
 	pub fn _new() -> Wld {
 		let mut tile_set = HashSet::new();
